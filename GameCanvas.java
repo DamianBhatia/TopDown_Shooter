@@ -1,0 +1,312 @@
+/* Damian Bhatia and Aleksandar Stojanovic
+ * Game Canvus Class
+ * This class is the heart of the game. It runs the main thread and game loop. 
+ * All the update and render methods are called here that run on the main thread.
+ * 2019-05-31
+ */
+
+import java.awt.Canvas;
+import java.awt.image.BufferStrategy;
+import java.awt.Graphics;
+import java.awt.Dimension;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import java.awt.Color;
+
+//The actual game that is running within the jpanel
+public class GameCanvas extends Canvas implements Runnable {
+  
+  //Class Variables
+  private Player player;
+  private HealthBar healthBar;
+  
+  private Color redHit = new Color(255, 0, 0, 130);
+  private Color shadow = new Color(0, 0, 0, 200);
+  private Color playerCircle1 = new Color(255,255,255, 70);
+  private Color playerCircle2 = new Color(255,255,255, 50);
+  private Color playerCircle3 = new Color(255,255,255, 30);
+  private Color playerCircle4 = new Color(255,255,255, 10);
+  
+  private int gotHitCounter = 0;
+  
+  //Main Game Thread
+  public Thread mainThread;
+  public boolean isPlaying = true;
+  
+  //Drawing Components
+  private Graphics g;
+  private Graphics2D g2d;
+  private BufferStrategy bs;
+  
+  //Level
+  private TileHandler tileHandler;
+  private BufferedImage level;
+  private ImageLoader loader;
+  private BufferedImage ground;
+  private BufferedImage wall;
+  private BufferedImage loseScreen1;
+  private BufferedImage loseScreen2;
+  private BufferedImage winScreen;
+  //Enemies
+  private EnemyHandler enemyHandler;
+  private int numEnemies;
+  
+  private Window window;
+  
+  //Camera that follows player
+  private Camera camera;
+  
+  //Bullets
+  private BulletController bulletController;
+  
+  //Constructor that sets everything up
+  public GameCanvas(Window window) {
+    this.window = window;
+    init();
+  }
+  
+  //Initialize and load everything before the game starts
+  public void init() {
+    this.setPreferredSize(new Dimension(1600, 960));
+    this.setMaximumSize(new Dimension(1600, 960));
+    this.setMinimumSize(new Dimension(1600, 960));
+    
+    //Load Level
+    this.tileHandler = new TileHandler();
+    this.loader = new ImageLoader();
+    this.level = loader.loadImage("assets/level.png");
+    this.ground = loader.loadImage("assets/floorTile.png");
+    this.wall = loader.loadImage("assets/blockTile.png");
+    this.loseScreen1 = loader.loadImage("assets/gameoverBackground1.jpg");
+    this.loseScreen2 = loader.loadImage("assets/gameoverBackground2.jpg");
+    this.winScreen = loader.loadImage("assets/winScreen.jpg");
+    this.enemyHandler = new EnemyHandler();
+    this.player = new Player(768, 480, 0, 0, enemyHandler, tileHandler, this.window);
+    this.camera = new Camera(player.getX(), player.getY());
+    this.bulletController = new BulletController();
+    this.healthBar = new HealthBar(this.player, 0, 0, this.camera);
+    this.numEnemies = 10;
+    loadLevel(level);
+    player.addCamera(this.camera );
+    //Add key input listener
+    addKeyListener(new KeyInput(this.player, this.bulletController, this.enemyHandler, this, this.window));
+  }
+  
+  //Called by runnable
+  public void run() {
+    //GameLoop then stops thread after
+    gameLoop();
+    stopMainThread();
+  }
+  
+  //Code behind the gameloop
+  private void gameLoop() {
+    long lastTime = System.nanoTime();
+    double amountOfTicks = 60.0;
+    double ns = 1000000000 / amountOfTicks;
+    double delta = 0;
+    long timer = System.currentTimeMillis();
+    int updates = 0;
+    int frames = 0;
+    while(isPlaying) {
+      long now = System.nanoTime();
+      delta += (now - lastTime) / ns;
+      lastTime = now;
+      while(delta >= 1) {
+        update();
+        updates++;
+        delta--;
+      }
+      render();
+      frames++;
+      
+      if(System.currentTimeMillis() - timer > 1000) {
+        timer += 1000;
+        System.out.println("FPS: " + frames);
+        frames = 0;
+        updates = 0;
+      }
+    }
+    //Draws the lose screen when gameover
+    render();
+  } 
+  
+  //Update game logic
+  public void update() {
+    
+    //Update player and camera position
+    player.update();
+    camera.update(player);
+    
+    //Update the enemies
+    for(int i = 0; i < enemyHandler.enemies.size(); i++) {
+      enemyHandler.enemies.get(i).update();
+    }
+    
+    if(this.numEnemies < 15) {
+      BasicEnemy enemy = new BasicEnemy((int)(Math.random() * 1000) + 40, (int)(Math.random() * 1000) +40, 3, 3, this.player, this.enemyHandler, this.tileHandler);
+      enemy.setSpeedX(enemy.getSpeedX() + 5);
+      enemy.setSpeedY(enemy.getSpeedY() + 5);
+      enemyHandler.addEnemy(enemy);
+      this.setNumEnemies(this.getNumEnemies() + 1);
+      
+    }
+    
+    //Update bullets position
+    for (int i = 0; i<bulletController.getSize(); i++){
+      if (bulletController.getBullet(i)!= null){     
+        bulletController.getBullet(i).update();
+      }
+    }
+    
+    healthBar.update();
+    
+  }
+  
+  //Update the graphics 
+  public void render() {
+    //BufferStrategy that allows for smooth graphics
+    bs = this.getBufferStrategy();
+    if(bs == null) {
+      this.createBufferStrategy(3);
+      return;
+    }
+    
+    //Drawing done here
+    g = bs.getDrawGraphics();
+    g2d = (Graphics2D)g;
+    
+    //Moves the camera and draws everything again after camera moved
+    g2d.translate(-camera.getX(), -camera.getY());
+    
+    //Render the map
+    for(int i = 0; i < tileHandler.tiles.size(); i++) {
+      tileHandler.tiles.get(i).render(g);
+    }
+    
+    //Draw red screen
+    if(this.player.getPrevHealth() > this.player.getHealth()) {
+      g.setColor(redHit);
+      g.fillRect((int)camera.getX() + 475, (int)camera.getY(), 640, 480);
+      gotHitCounter++;
+      if(gotHitCounter >= 40) {
+        this.player.setPrevHealth();
+        gotHitCounter = 0;
+      }
+    }
+    
+    
+    g2d.setColor(shadow);
+    g2d.fillRect(0,0, 1600, 960);
+    
+    g2d.setColor(playerCircle1);
+    g2d.fillOval(this.player.getX()-130, this.player.getY()-100, 250, 250);
+    g2d.setColor(playerCircle2);
+    g2d.fillOval(this.player.getX()-140, this.player.getY()-110, 275, 275);
+    g2d.setColor(playerCircle3);
+    g2d.fillOval(this.player.getX()-150, this.player.getY()-120, 300, 300);
+    g2d.setColor(playerCircle4);
+    g2d.fillOval(this.player.getX()-160, this.player.getY()-130, 325, 325);
+    
+    
+    player.render(g);
+    healthBar.render(g);
+    
+    //Render the enemies
+    for(int i = 0; i < enemyHandler.enemies.size(); i++) {
+      if(enemyHandler.enemies.get(i).getDistance() < 210) {
+        enemyHandler.enemies.get(i).render(g);
+      }
+    }
+    
+     //Render the bullets shot
+    for (int i = 0; i<bulletController.getSize(); i++){
+      if ( bulletController.getBullet(i)!= null){
+        bulletController.getBullet(i).render(g);
+      }
+    }
+    
+    g2d.translate(camera.getX(), camera.getY());
+    
+    
+    //Win and Lose Screen called
+    if(this.player.getStatus() == false) {
+      g.drawImage(loseScreen1, 368, -10, null);
+      isPlaying = false;
+    } else if (this.player.getScore() == 200) {
+      g.drawImage(winScreen, 368, -10, null);
+      isPlaying = false;
+    }
+    else if (this.player.getReload() == 0 && player.getAmmo() == 0){
+      g.drawImage(loseScreen2, 368, -10, null);
+      isPlaying = false;
+    }
+    
+    g.dispose();
+    bs.show(); 
+  }
+  
+  //Starts the thread
+  //Called in the window class
+  public synchronized void startMainThread() {
+    mainThread = new Thread(this);
+    mainThread.start();
+    isPlaying = true;
+    
+  }
+  
+  //Attempts to stop the thread once gameloop is over
+  public synchronized void stopMainThread() {
+    try {
+      mainThread.join();
+      isPlaying = false;
+      
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+  
+  
+  //Loading map using image
+  //Based off of color of block place object
+  private void loadLevel(BufferedImage img) {
+    int width = img.getWidth();
+    int height = img.getHeight();
+    
+    for(int row = 0; row < height; row++) {
+      for(int col = 0; col < width; col++) {
+        int pixel = img.getRGB(col, row);
+        int red = (pixel >> 16) & 0xff;
+        int green = (pixel >> 8) & 0xff;
+        int blue = (pixel) & 0xff;
+        
+        //Different colors give different objects placed
+        if(red == 255 && green == 255 && blue == 255) {
+          tileHandler.addTile(new Tile(col*32, row*32, wall, "Wall"));
+        } else if (red == 128 && green == 128 && blue == 128) {
+          tileHandler.addTile(new Tile(col*32, row*32, ground, "Ground"));
+        } else if (red == 0 && green == 38 && blue == 255) {
+          tileHandler.addTile(new Tile(col*32, row*32, ground, "Ground"));
+          player.setX(col*32);
+          player.setY(row*32);
+        } else if (red == 255 && green == 0 && blue == 0) {
+          enemyHandler.addEnemy(new BasicEnemy(col*32, row*32, 0, 0, this.player, this.enemyHandler, this.tileHandler));
+          tileHandler.addTile(new Tile(col*32, row*32, ground, "Ground"));
+        }
+      }
+    }
+  }
+  
+  //Getters and Setters
+  
+  public void setNumEnemies(int x) {
+    this.numEnemies = x;
+  }
+  
+  public int getNumEnemies() {
+    return this.numEnemies;
+  }
+  
+  
+  
+}

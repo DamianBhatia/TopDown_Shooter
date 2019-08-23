@@ -1,0 +1,19 @@
+import java.util.LinkedList;
+
+public class TileHandler {
+
+  public LinkedList<Tile> tiles;
+  
+  public TileHandler() {
+    tiles = new LinkedList<Tile>();
+  }
+  
+  public void addTile(Tile tile) {
+    tiles.add(tile);
+  }
+  
+  public void removeTile(Tile tile) {
+    tiles.remove(tile);
+  }
+
+}

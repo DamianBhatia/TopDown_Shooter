@@ -1,0 +1,89 @@
+/* Damian Bhatia and Aleksandar Stojanovic
+ * enemy Class
+ * This class extends and enemy class and provides all compnents of an enemy as well as other basic enemy compnents
+ * 2019-05-31
+ */
+
+import java.awt.Graphics;
+import java.awt.image.BufferedImage;
+
+//The Player Object that the user moves
+public class BasicEnemy extends Enemy {
+  
+  //Following player
+  private Player player;
+  private float distance, diffX, diffY;
+  
+  private EnemyHandler enemyHandler;
+  private TileHandler tileHandler;
+  
+  //Image handling
+  private ImageLoader imageLoader;
+  private BufferedImage upImg;
+  private BufferedImage downImg;
+  private BufferedImage rightImg;  
+  private BufferedImage leftImg;
+  
+  
+  //Constructor called whenever instance created
+  public BasicEnemy(int x, int y, int speedX, int speedY, Player player, EnemyHandler enemyHandler, TileHandler tileHandler) {
+    //Init Values in variables
+    super(x, y, speedX, speedY);
+    this.player = player;
+    this.enemyHandler = enemyHandler;
+    this.tileHandler = tileHandler;
+    init();
+  }
+  
+  //Set everything up
+  public void init() {
+    imageLoader = new ImageLoader();
+    
+    downImg = imageLoader.loadImage("assets/enemyDown.png");
+    upImg = imageLoader.loadImage("assets/enemyUp.png");
+    rightImg = imageLoader.loadImage("assets/enemyRight.png");
+    leftImg = imageLoader.loadImage("assets/enemyLeft.png");   
+  }
+  
+  //Update the player
+  public void update() {
+    this.setX(this.getX() + this.getSpeedX());
+    this.setY(this.getY() + this.getSpeedY());
+    
+    //Follow the player
+    diffX = this.getX() - this.player.getX() - 32;
+    diffY = this.getY() - this.player.getY() - 32;
+    distance = (float)Math.sqrt((this.getX() - this.player.getX()) * (this.getX() - this.player.getX()) + (this.getY() - this.player.getY()) * (this.getY() - this.player.getY()));
+    
+    //Only follow within given radius
+    if(distance < 400) {
+      this.setSpeedX((-1/distance) * diffX);
+      this.setSpeedY((-1/distance) * diffY);
+    } else {
+      this.setSpeedX(0);
+      this.setSpeedY(0);
+    }
+    
+    //Clamp to screen
+    if(x <= 35) speedX= -1*(speedX);
+    if(x >= 1530) speedX = -1*(speedX);
+    if(y <= 35) speedY = -1*(speedY);
+    if(y >= 870) speedY = -1*(speedY);  
+    
+  }
+  
+  //Draw the enemy
+  public void render(Graphics g) {
+    
+    if (this.player.getY() > this.getY()){
+      g.drawImage(downImg, (int)this.getX(), (int)this.getY(), null);
+    } else if (this.player.getY() < this.getY()){
+      g.drawImage(upImg, (int)this.getX(), (int)this.getY(), null);
+    } else if (this.player.getX() > this.getX()){
+      g.drawImage(rightImg, (int)this.getX(), (int)this.getY(), null);
+    } else if (this.player.getX() < this.getX()){
+      g.drawImage(leftImg, (int)this.getX(), (int)this.getY(), null);
+    }
+  }
+
+}

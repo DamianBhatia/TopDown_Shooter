@@ -1,0 +1,242 @@
+/* Damian Bhatia and Aleksandar Stojanovic
+ * player Class
+ * This class provides all the componets of the player that is displayed on the screen
+ * 2019-05-31
+ */
+import java.awt.Graphics;
+import java.awt.image.BufferedImage;
+import java.awt.Rectangle;
+import java.awt.Font;
+import java.awt.Color;
+
+//The Player Object that the user moves
+public class Player {
+  
+  
+  //Class Variables
+  private int x, y;
+  private int speedX, speedY;
+  private int health;
+  private int prevHealth;
+  public int score;
+  private boolean isAlive;
+  private int ammo;
+  private Camera camera;
+  private Font font;
+  private int reload;
+  
+  //Image handling
+  private ImageLoader imageLoader;
+  private BufferedImage upImg;
+  private BufferedImage downImg;
+  private BufferedImage rightImg;
+  private BufferedImage leftImg;
+  
+  //Enemies
+  private EnemyHandler enemyHandler;
+  
+  //Tiles
+  private TileHandler tileHandler;
+  
+  //position of the player
+  private Boolean isFaceUp, isFaceDown, isFaceLeft, isFaceRight; 
+  
+  private Window window;
+  
+  //Constructor called whenever instance created
+  public Player(int x, int y, int speedX, int speedY, EnemyHandler handler, TileHandler tileHandler, Window window) {
+    //Init Values in variables
+    this.x = x;
+    this.y = y;
+    this.speedX = speedX;
+    this.speedY = speedY;
+    this.setPosition(false, false, false, true);
+    this.enemyHandler = handler;
+    this.tileHandler = tileHandler;
+    this.health = 1000;
+    this.prevHealth = 1000;
+    this.score = 0;
+    this.window = window;
+    this.isAlive = true;
+    this.ammo = 20;
+    this.font = new Font("Arial", Font.BOLD, 15);
+    this.reload = 2;
+    init();// calls the creation and creates content
+  }
+  
+  //Set everything up
+  public void init() {
+    imageLoader = new ImageLoader();
+    
+    //Load in images needed
+    upImg = imageLoader.loadImage("assets/playerUp.png");
+    downImg = imageLoader.loadImage("assets/playerDown.png");
+    rightImg = imageLoader.loadImage("assets/playerRight.png");
+    leftImg = imageLoader.loadImage("assets/playerLeft.png");
+    
+  }
+  
+  //Update the player
+  public void update() {
+    //Update position of player
+    this.x+=this.speedX;
+    this.y+=this.speedY;
+    
+    checkCollision();
+    
+    //Clamp to screen
+    if(x <= 35) x = 35;
+    if(x >= 1530) x = 1530;
+    if(y <= 35) y = 35;
+    if(y >= 870) y = 870;  
+  }
+  
+  //Draw the player
+  public void render(Graphics g) {
+    
+    //Draw image based on current state of player
+    if(isFaceUp) {
+      g.drawImage(upImg, this.getX(), this.getY(), null);
+    } else if (isFaceDown) {
+      g.drawImage(downImg, this.getX(), this.getY(), null);
+    } else if (isFaceRight) {
+      g.drawImage(rightImg, this.getX(), this.getY(), null);
+    } else {
+      g.drawImage(leftImg, this.getX(), this.getY(), null);
+    }
+    // draws ammo and reload on the top left side of the screen 
+    g.setFont(font);
+    g.setColor(Color.WHITE);
+    if (getAmmo()<1){
+      g.setColor(Color.RED);
+    }
+    g.drawString(("Ammo: " + this.getAmmo()), (int)this.camera.getX() + 490, (int)this.camera.getY() + 40);
+    if (getReload()< 1){
+      g.setColor(Color.RED);
+    }
+    else{
+      g.setColor(Color.WHITE);
+    }
+    g.drawString(("Reloads Left: " + this.getReload()), (int)this.camera.getX() + 580, (int)this.camera.getY()+40);
+   
+  }
+  
+  //Getters and Setters for variables
+  public int getX() {
+    return this.x;
+  }
+  
+  public void setX(int x) {
+    this.x = x;
+  }
+  
+  public int getY() {
+    return this.y;
+  }
+  
+  public void setY(int y) {
+    this.y = y;
+  }
+  
+  public int getSpeedX() {
+    return this.speedX;
+  }
+  
+  public void setSpeedX(int speedX) {
+    this.speedX = speedX;
+  }
+  
+  public int getSpeedY() {
+    return this.speedY;
+  }
+  
+  public void setSpeedY(int speedY) {
+    this.speedY = speedY;
+  }
+  
+  //Get the current direction that the player is facing
+  public boolean isFaceUp() {
+    return isFaceUp; 
+  } 
+  
+  public boolean isFaceDown() {
+    return isFaceDown;
+  } 
+  
+  public boolean isFaceLeft() {
+    return isFaceLeft; 
+  } 
+  
+  public boolean isFaceRight() {
+    return isFaceRight;
+  } 
+  
+  //sets the current position that the player is facing
+  public void setPosition(boolean faceUp,boolean faceDown,boolean faceLeft,boolean faceRight){
+    this.isFaceUp = faceUp;
+    this.isFaceDown = faceDown;
+    this.isFaceRight = faceRight;
+    this.isFaceLeft = faceLeft;
+  }
+  
+  public int getHealth() {
+    return this.health;
+  }
+  
+  public int getPrevHealth() {
+    return this.prevHealth;
+  }
+  
+  public void setPrevHealth() {
+    this.prevHealth = this.health;
+  }
+  
+  public int getScore() {
+    return this.score;
+  }
+  
+  private void gotHit() {
+    if(this.health > 0) {
+      this.health -= 5;
+      this.prevHealth = this.health + 5;
+    }
+  }
+  
+  public Rectangle getBounds() {
+    return new Rectangle(this.getX(),this.getY(), 40, 40);
+  }
+  
+  public boolean getStatus() {
+    return this.isAlive;
+  }
+  
+  public void setStatus(boolean b) {
+    this.isAlive = b;
+  }
+  
+  public void addCamera(Camera camera){
+    this.camera = camera;
+  }
+  public int getAmmo(){
+    return this.ammo;
+  }
+  public void setAmmo(int ammo){
+    this.ammo = ammo;
+  }
+  
+  public int getReload(){
+    return this.reload;
+  }
+  public void setReload(int reload){
+    this.reload = reload;
+  }
+  
+  private void checkCollision() {
+    for(int i = 0; i < this.enemyHandler.enemies.size(); i++){
+      if(getBounds().intersects(this.enemyHandler.enemies.get(i).getBounds())) {
+        gotHit();
+      }
+    }
+  }
+  
+}

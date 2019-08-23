@@ -1,0 +1,19 @@
+import java.util.LinkedList;
+
+public class EnemyHandler {
+
+  public LinkedList<Enemy> enemies;
+  
+  public EnemyHandler() {
+    enemies = new LinkedList<Enemy>();
+  }
+  
+  public void addEnemy(Enemy enemy) {
+    enemies.add(enemy);
+  }
+  
+  public void removeEnemy(Enemy enemy) {
+    enemies.remove(enemy);
+  }
+
+}

@@ -1,0 +1,92 @@
+/* Damian Bhatia and Aleksandar Stojanovic
+ * enemy Class
+ * This class provides all compnents of an enemy object
+ * 2019-05-31
+ */
+import java.awt.Graphics;
+import java.awt.Rectangle;
+
+//Generic parent class for all enemies
+public abstract class Enemy {
+
+  protected float x, y;
+  protected float speedX, speedY;
+  
+    //posistion of the player
+  protected Boolean isFaceUp, isFaceDown, isFaceLeft, isFaceRight; 
+  
+  public Enemy(float x, float y, float speedX, float speedY) {
+    this.x = x;
+    this.y = y;
+    this.speedX = speedX;
+    this.speedY = speedY;
+    
+    setPosition(false, false, false, true);
+  }
+  
+  //Abstract methods implemented in children classes
+  public abstract void render(Graphics g);
+  public abstract void update(); 
+  
+  //Getters and Setters for variables
+  public float getX() {
+    return this.x;
+  }
+  
+  public void setX(float x) {
+    this.x = x;
+  }
+  
+  public float getY() {
+    return this.y;
+  }
+  
+  public void setY(float y) {
+    this.y = y;
+  }
+  
+  public float getSpeedX() {
+    return this.speedX;
+  }
+  
+  public void setSpeedX(float speedX) {
+    this.speedX = speedX;
+  }
+  
+  public float getSpeedY() {
+    return this.speedY;
+  }
+  
+  public void setSpeedY(float speedY) {
+    this.speedY = speedY;
+  }
+  
+  //Get the current direction that the enemy is facing
+  public boolean isFaceUp(){
+    return isFaceUp; 
+  } 
+  
+  public boolean isFaceDown(){
+    return isFaceDown;
+  } 
+  
+  public boolean isFaceLeft(){
+    return isFaceLeft; 
+  } 
+  
+  public boolean isFaceRight(){
+    return isFaceRight;
+  } 
+  
+  //sets the current position enemy is facing
+  public void setPosition(boolean faceUp,boolean faceDown,boolean faceLeft,boolean faceRight){
+    this.isFaceUp = faceUp;
+    this.isFaceDown = faceDown;
+    this.isFaceRight = faceRight;
+    this.isFaceLeft = faceLeft;
+  }
+  
+  public Rectangle getBounds() {
+    return new Rectangle((int)this.getX(), (int)this.getY(), 30, 30);
+  }
+}

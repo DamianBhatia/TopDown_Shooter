@@ -1,0 +1,89 @@
+/* Damian Bhatia and Aleksandar Stojanovic
+ * key input Class
+ * This class handles all the key input withen the game
+ * 2019-05-31
+ */
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+
+//Key Input for the player movement
+public class KeyInput extends KeyAdapter {
+  
+  private Player player;
+  private BulletController bulletController;
+  private EnemyHandler enemyHandler;
+  
+  private Window window;
+  
+  private GameCanvas game;
+  //constructor
+  public KeyInput(Player player, BulletController bulletController, EnemyHandler enemyHandler, GameCanvas game, Window window) {
+    this.player = player;
+    this.bulletController = bulletController;
+    this.enemyHandler = enemyHandler;
+    this.game = game;
+    this.window = window;
+  }
+  
+  public void keyPressed(KeyEvent e) {
+    int key = e.getKeyCode();
+    
+    if (key == KeyEvent.VK_ENTER && game.isPlaying == false) {
+      window.dispose();
+      new Window("Shoot Till You Drop", 640, 480, new Game(), new TitleScreen(),new InScreen());
+    }
+    
+    if (key == KeyEvent.VK_SPACE){
+      
+      if (player.getAmmo() > 0){//checks if there is still ammo
+        player.setAmmo(player.getAmmo()-1);//reduces ammo count
+        
+        //draws bullet with respective position 
+        if(player.isFaceRight()){ 
+          bulletController.addBullet(new Bullet(player.getX()+45,player.getY()+20,8,0,bulletController, enemyHandler, player, this.game));
+        }
+        else if(player.isFaceLeft()){ 
+          bulletController.addBullet(new Bullet(player.getX()-45,player.getY()+20,-8,0,bulletController, enemyHandler, player, this.game));
+        }
+        else if(player.isFaceUp()){ 
+          bulletController.addBullet(new Bullet(player.getX()+20,player.getY()-45,0,-8,bulletController, enemyHandler, player, this.game));
+        }
+        else if(player.isFaceDown()){ 
+          bulletController.addBullet(new Bullet(player.getX()+20,player.getY()+45,0,8,bulletController, enemyHandler, player, this.game));
+        }    
+      }
+    } 
+    if(key == KeyEvent.VK_R){
+      if (player.getReload()!=0){
+        player.setReload(player.getReload() - 1);
+        player.setAmmo(20);
+      }
+    }
+    else if(key == KeyEvent.VK_W) {
+      player.setSpeedY(-5);
+      player.setPosition(true,false,false,false);//Updates position 
+    }
+    else if(key == KeyEvent.VK_S) {
+      player.setSpeedY(5);
+      player.setPosition(false,true,false,false);//Updates position 
+    }
+    else if(key == KeyEvent.VK_D) {
+      player.setSpeedX(5);
+      player.setPosition(false,false,false,true);//Updates position 
+    }
+    else if(key == KeyEvent.VK_A) {
+      player.setSpeedX(-5);
+      player.setPosition(false,false,true,false);//Updates position 
+    }
+  }
+  
+  public void keyReleased(KeyEvent e) {
+    int key = e.getKeyCode();
+    
+    if(key == KeyEvent.VK_W) player.setSpeedY(0);
+    if(key == KeyEvent.VK_S) player.setSpeedY(0);
+    if(key == KeyEvent.VK_D) player.setSpeedX(0);
+    if(key == KeyEvent.VK_A) player.setSpeedX(0);
+  }
+  
+}

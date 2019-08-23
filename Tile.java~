@@ -1,0 +1,30 @@
+import java.awt.image.BufferedImage;
+import java.awt.Graphics;
+import java.awt.Color;
+
+//Different types of blocks
+public class Tile {
+
+  private BufferedImage img;
+  
+  private String type;
+  
+  private int x, y;
+  
+  public Tile(int x, int y, BufferedImage img, String type) {
+    this.x = x;
+    this.y = y;
+    this.img = img;
+    this.type = type;
+  }
+  
+  public void render(Graphics g) {
+    g.drawImage(this.img, this.x, this.y, null);
+  }
+  
+  //Getter 
+  public String getType() {
+    return this.type;
+  }
+  
+}
